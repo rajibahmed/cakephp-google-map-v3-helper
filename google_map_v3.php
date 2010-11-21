@@ -102,4 +102,3 @@ class GoogleMapV3Helper extends Helper {
 
   }
 ?>
-
