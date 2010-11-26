@@ -1,14 +1,43 @@
 <?php
 
+/**
+ * This is a CakePHP helper that helps users to integrate google map v3 
+ * into their application by only writing php codes
+ *
+ * @package default
+ * @author Rajib Ahmed
+ * @version 0.10.12 
+ */
 class GoogleMapV3Helper extends Helper {
 
+	/**
+	 * Cakephp builtin helper
+	 *
+	 * @var array 
+	 */
     public $helpers=array('Javascript', 'Html');
 
+	/**
+	 * google maker config instance variable
+	 *
+	 * @var array
+	 */
     public $markers = array();
 
-    public $map = null;
+	/**
+	 * google map instance varible
+	 *
+	 * @var string
+	 */
+    public $map = '';
 
 
+
+	/**
+	 * settings of the helper
+	 *
+	 * @var array
+	 */
     private $_defaultSettings = array(
       'zoom'    =>6,
       'type'    =>'ROADMAP',
@@ -26,15 +55,20 @@ class GoogleMapV3Helper extends Helper {
       'autoCenterMarkers'=>true
       );
 
-
-      public function to_script(){
+		
+	
+	/**
+	 * This method outputs string javascript to the html
+	 *
+	 * @return string
+	*/	
+    public function to_script(){
         $script='<script type="text/javascript">
-        $(function(){
-
-
-
+	    //<![CDATA[ 
+	    	$(function(){ 
         ';
-
+		
+        
         $script.=$this->map;
 
         if($this->_defaultSettings['showMarker'] && !empty($this->markers) && is_array($this->markers)){
@@ -42,21 +76,29 @@ class GoogleMapV3Helper extends Helper {
         }
 
         if($this->_defaultSettings['autoCenterMarkers'])
-        { $script.= '
-        var bounds = new google.maps.LatLngBounds();
-        $.each(gMarkers,function (index, marker){ bounds.extend(marker.position);});
-        gMap.fitBounds(bounds);
-        ';
+        { 
+        	$script.= $this->autoCenter();
         }
 
+ 
+		
         $script.='
-        });
+		    });
+      	 //]]>
         </script>';
 
         return $script;
       }
 
 
+
+	/**
+	 * This the initialization point of the script
+	 *
+	 * @param array $options associative array of settings are passed
+	 * @return void
+	 * @author Rajib Ahmed
+	 */
     function map($options=null){
       $settings = Set::merge($this->_defaultSettings,$options);
 
@@ -98,6 +140,20 @@ class GoogleMapV3Helper extends Helper {
         ";
 
         $this->markers[] = $marker;
+    }
+    
+    public function autoCenter()
+    {
+    	return '
+        var bounds = new google.maps.LatLngBounds();
+        $.each(gMarkers,function (index, marker){ bounds.extend(marker.position);});
+        gMap.fitBounds(bounds);
+        ';
+    }
+    
+    public function addInfoWindow()
+    {
+    	
     }
 
   }
