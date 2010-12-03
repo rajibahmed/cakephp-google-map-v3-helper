@@ -2,13 +2,14 @@
 
 /**
  * This is a CakePHP helper that helps users to integrate google map v3 
- * into their application by only writing php codes
+ * into their application by only writing php codes this helper depends on JQuery
  *
  * @package default
  * @author Rajib Ahmed
  * @version 0.10.12 
  */
 class GoogleMapV3Helper extends Helper {
+
 
 	/**
 	 * Cakephp builtin helper
@@ -23,6 +24,13 @@ class GoogleMapV3Helper extends Helper {
 	 * @var array
 	 */
     public $markers = array();
+	
+	/**
+	 * google infoWindow config instance variable
+	 *
+	 * @var array
+	 */
+    public $infoWindow = array();	
 
 	/**
 	 * google map instance varible
@@ -39,21 +47,35 @@ class GoogleMapV3Helper extends Helper {
 	 * @var array
 	 */
     private $_defaultSettings = array(
-      'zoom'    =>6,
-      'type'    =>'ROADMAP',
-      'longitude'=>-73.95144,
-      'latitude'=>40.698,
-      'localize'=>true,
-      'showMarker'  =>true,
-      'showInfoWindow'=>true,
-      'markerIcon'=>'http://google-maps-icons.googlecode.com/files/home.png',
-      'infoWindowText'=>'Change Me',
-      'div'=>array(
-        'id'=>'map_canvas'
-       ),
-      'usesJquery'=>true,
-      'autoCenterMarkers'=>true
-      );
+		'map'=>array(
+			
+		),
+		'zoom'    =>6,
+		'type'    =>'ROADMAP',
+		'longitude'=>-73.95144,
+		'latitude'=>40.698,
+		'localize'=>true,
+		'showMarker'  =>true,
+		'showInfoWindow'=>true,
+		'markerIcon'=>'http://google-maps-icons.googlecode.com/files/home.png',
+		'infoWindow'=>array(
+			
+		),
+		'marker'=>array(
+			'autoCenter'=>true,
+			'icon'		=>'http://google-maps-icons.googlecode.com/files/home.png'
+		),
+		'div'=>array(
+			'id'=>'map_canvas'
+		),
+		'event'=>array(),
+		
+		'autoCenterMarkers'=>true
+	);
+
+	
+	private $_currentSettings =array();
+
 
 		
 	
@@ -79,7 +101,7 @@ class GoogleMapV3Helper extends Helper {
         { 
         	$script.= $this->autoCenter();
         }
-
+		
  
 		
         $script.='
@@ -151,10 +173,23 @@ class GoogleMapV3Helper extends Helper {
         ';
     }
     
-    public function addInfoWindow()
+    public function addInfoWindow($options=array())
     {
+		$this->infoWindow[] = " var in = new google.maps.InfoWindow({
+									content:'hello',
+									position:gMap.getCenter()
+								});"
+								
+								
+		$this->map .= $this->infoWindow[0];
     	
     }
+	
+	#Private methods
+	private function _mapOptions(){
+	
+	
+	}
 
   }
 ?>
