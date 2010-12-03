@@ -84,7 +84,7 @@ class GoogleMapV3Helper extends Helper {
 	 *
 	 * @return string
 	*/	
-    public function to_script(){
+    public function toScript(){
         $script='<script type="text/javascript">
 	    //<![CDATA[ 
 	    	$(function(){ 
