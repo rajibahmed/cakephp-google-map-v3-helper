@@ -59,7 +59,7 @@ class GoogleMapV3Helper extends Helper {
 		'showInfoWindow'=>true,
 		'markerIcon'=>'http://google-maps-icons.googlecode.com/files/home.png',
 		'infoWindow'=>array(
-			
+			'content'=>'Hi from google map helper',
 		),
 		'marker'=>array(
 			'autoCenter'=>true,
@@ -175,7 +175,7 @@ class GoogleMapV3Helper extends Helper {
     
     public function addInfoWindow($options=array())
     {
-		$this->infoWindow[] = " var in = new google.maps.InfoWindow({
+		$this->infoWindow[0] = " var in = new google.maps.InfoWindow({
 									content:'hello',
 									position:gMap.getCenter()
 								});"
