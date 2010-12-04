@@ -28,4 +28,4 @@ optional, add markers to the map:
 
 finally, now time to make the script
 
-	<?php echo $googleMapV3->to_script() ?> #there is a echo in this line only
+	<?php echo $googleMapV3->toScript() ?> #there is a echo in this line only
