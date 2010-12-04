@@ -5,6 +5,7 @@ CakePHP google map v3 helper / wrapper
 Introduction
 ------------
 This is a helper that is made upon google maps api version > 3.0
+and this depends on use of JQuery
 
 
 Usage

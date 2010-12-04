@@ -9,7 +9,18 @@
  * @version 0.10.12 
  */
 class GoogleMapV3Helper extends Helper {
+	
+	public static $MARKER_COUNT;
+	
+	public static $INFO_WINDOW_COUNT;
 
+	
+	public function __construct()
+	{
+		self::$MARKER_COUNT 		= 0;
+		self::$INFO_WINDOW_COUNT 	= 0;
+		
+	}
 
 	/**
 	 * Cakephp builtin helper
@@ -59,7 +70,11 @@ class GoogleMapV3Helper extends Helper {
 		'showInfoWindow'=>true,
 		'markerIcon'=>'http://google-maps-icons.googlecode.com/files/home.png',
 		'infoWindow'=>array(
-			'content'=>'Hi from google map helper',
+			'content'=>'Hi from cakephp-google-mapV3 helper',
+			'useMultiple'=>false,  #Using single infowindow object for all
+			'maxWidth'=>200,
+			'latitude'=>null,
+			'longitude'=>null
 		),
 		'marker'=>array(
 			'autoCenter'=>true,
@@ -129,6 +144,7 @@ class GoogleMapV3Helper extends Helper {
 
       $map = "
             gMarkers = new Array();
+        	gInfoWindow = new Array();
             var noLocation = new google.maps.LatLng(".$settings['latitude'].", ".$settings['longitude'].");
             var initialLocation;
             var browserSupportFlag =  new Boolean();
@@ -161,7 +177,9 @@ class GoogleMapV3Helper extends Helper {
               }));
         ";
 
-        $this->markers[] = $marker;
+       	$this->map.= $marker;
+       	
+        return self::$MARKER_COUNT++;
     }
     
     public function autoCenter()
@@ -175,14 +193,25 @@ class GoogleMapV3Helper extends Helper {
     
     public function addInfoWindow($options=array())
     {
-		$this->infoWindow[0] = " var in = new google.maps.InfoWindow({
-									content:'hello',
-									position:gMap.getCenter()
-								});"
-								
-								
-		$this->map .= $this->infoWindow[0];
-    	
+		$settings = $this->_defaultSettings['infoWindow'];
+		$settings = array_merge($settings,$options);
+		
+		
+		if(!empty($settings['latitude']) && !empty($settings['longitude'])){
+			$position = "new google.maps.LatLng(".$options['latitude'].",".$options['longitude'].")";
+		}else{
+			$position = " gMap.getCenter()";
+		}
+		
+	        $windows = "
+			gInfoWindow.push( new google.maps.InfoWindow({
+					position: {$position},
+					content: '{$settings['content']}',
+					maxWidth: {$settings['maxWidth']}
+	    	}));
+	        ";
+		$this->map.=$windows;
+		return self::$INFO_WINDOW_COUNT++;
     }
 	
 	#Private methods
@@ -191,5 +220,22 @@ class GoogleMapV3Helper extends Helper {
 	
 	}
 
+
+	public function addEvent($marker)
+	{
+		$this->map.=" 
+			google.maps.event.addListener(gMarkers[{$marker}],'click',function(){
+				gInfoWindow[$marker].open(gMap,this);
+			});
+		";
+	}
+	
+	
+	public function setContentInfoWindow($con,$index)
+	{
+		$this->map.=" gInfoWindow[$index].setContent('".$this->Javascript->escapeString($con)."');";
+	}
+	
+	
   }
 ?>
