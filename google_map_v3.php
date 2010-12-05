@@ -68,7 +68,6 @@ class GoogleMapV3Helper extends Helper {
 		'localize'=>true,
 		'showMarker'  =>true,
 		'showInfoWindow'=>true,
-		'markerIcon'=>'http://google-maps-icons.googlecode.com/files/home.png',
 		'infoWindow'=>array(
 			'content'=>'Hi from cakephp-google-mapV3 helper',
 			'useMultiple'=>false,  #Using single infowindow object for all
@@ -163,10 +162,12 @@ class GoogleMapV3Helper extends Helper {
 
 
     function addMarker($options){
+    	
         if($options==null) return null;
         if(!isset($options['latitude']) || $options['latitude']==null || !isset($options['longitude']) || $options['longitude']==null) return null;
         if (!preg_match("/[-+]?\b[0-9]*\.?[0-9]+\b/", $options['latitude']) || !preg_match("/[-+]?\b[0-9]*\.?[0-9]+\b/", $options['longitude'])) return null;
-
+		
+        $options = array_merge($this->_defaultSettings['marker'],$options);
 
         $marker = "
             gMarkers.push(
@@ -223,6 +224,7 @@ class GoogleMapV3Helper extends Helper {
 
 	public function addEvent($marker)
 	{
+		
 		$this->map.=" 
 			google.maps.event.addListener(gMarkers[{$marker}],'click',function(){
 				gInfoWindow[$marker].open(gMap,this);
