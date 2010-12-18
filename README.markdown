@@ -16,10 +16,6 @@ or add it from
    
    https://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js
    
-Test Files
------------------
-Test file included
-
    
 Load Helper
 -----------
@@ -109,3 +105,18 @@ or
 finally, now time to make the script
 
 	<?php echo $this->GoogleMapV3->script() ?>
+	
+	
+Test Files
+-----------------
+
+Test file included (they might not work right away because of special classes and functions)
+
+To test put the helper in 
+/app/plugins/tools/views/helpers/
+
+the test file in
+/app/plugins/tools/tests/cases/helpers/
+
+open the following url in the browser:
+http://yourdomain/test.php?show=cases&plugin=tools
