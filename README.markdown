@@ -121,9 +121,14 @@ finally, now time to make the script
 
 	<?php 
 		# a simple image as map
+		$markers = array(
+			array('lat'=>48.2, 'lng'=>11.1),
+			array('lat'=>48.1, 'lng'=>11.2)
+		);
 		$options = array(
 			'size' => '500x400',
-			'center' => true
+			'center' => true,
+			'markers' => $this->GoogleMap->staticMarkers($markers)
 		);
 		$attr = array(
 			'title'=>'Yeah'
