@@ -27,8 +27,22 @@ class GoogleMapV3Helper extends AppHelper {
 		self::$MARKER_COUNT 		= 0;
 		self::$INFO_WINDOW_COUNT 	= 0;
 
-		$this->key = Configure::read('Google.key');
-		$this->api = Configure::read('Google.api');
+		$google = (array)Configure::read('Google');
+		if (!empty($google['key'])) {
+			$this->key = $google['key'];
+		}
+		if (!empty($google['api'])) {
+			$this->api = $google['api'];
+		}
+		if (!empty($google['zoom'])) {
+			$this->_defaultSettings['map']['zoom'] = $google['zoom'];
+		}
+		if (!empty($google['lat'])) {
+			$this->_defaultSettings['map']['lat'] = $google['lat'];
+		}
+		if (!empty($google['lng'])) {
+			$this->_defaultSettings['map']['lng'] = $google['lng'];
+		}
 	}
 
 	/**
@@ -83,6 +97,11 @@ class GoogleMapV3Helper extends AppHelper {
 			'keyboardShortcuts' => true,
 			'scaleControl' => true
 		),
+		'staticMap' => array(
+			//'zoom' => 12
+			//'lat' => 51,
+			//'lng' => 11,
+		),
 		'localize' => true,
 		'showMarker' => true,
 		'showInfoWindow' => true,
@@ -104,14 +123,18 @@ class GoogleMapV3Helper extends AppHelper {
 		'div'=>array(
 			'id'=>'map_canvas'
 		),
-		'event'=>array(),
-
+		'event'=>array(
+		),
+		'animation' => array(
+		),
 		'autoCenterMarkers'=>false
 	);
 
 
 	private $_currentSettings =array();
 
+
+/** Google Maps JS **/
 
 	/**
 	 * JS maps.google API url
@@ -144,6 +167,11 @@ class GoogleMapV3Helper extends AppHelper {
 		return $url;
 	}
 	
+	
+	/**
+	 * @return string $currentContainerObject
+	 * 2010-12-18 ms
+	 */
 	public function name() {
 		return 'map'.self::$MAP_COUNT;
 	}
@@ -151,10 +179,12 @@ class GoogleMapV3Helper extends AppHelper {
 
 	/**
 	 * This the initialization point of the script
+	 * Returns the div container you can echo on the website
 	 *
 	 * @param array $options associative array of settings are passed
 	 * @return string $divContainer
 	 * @author Rajib Ahmed
+	 * 2010-12-18 ms
 	 */
 	function map($options = array()) {
 		$options = $this->_currentSettings = Set::merge($this->_defaultSettings, $options);
@@ -215,6 +245,7 @@ class GoogleMapV3Helper extends AppHelper {
 	 * @param array $options
 	 * - lat, lng, title
 	 * @return int $markerCount or false on failure
+	 * 2010-12-18 ms
 	 */
 	function addMarker($options) {
 		if (empty($options)) {
@@ -279,7 +310,12 @@ class GoogleMapV3Helper extends AppHelper {
 
 
 
-
+	/**
+	 * @param array $options
+	 * - lat, lng, content, maxWidth, pixelOffset, zIndex
+	 * @return int $windowCount
+	 * 2010-12-18 ms
+	 */
 	public function addInfoWindow($options=array()) {
 		$options = $this->_currentSettings['infoWindow'];
 		$options = array_merge($options,$options);
@@ -304,7 +340,12 @@ class GoogleMapV3Helper extends AppHelper {
 		return self::$INFO_WINDOW_COUNT++;
 	}
 
-
+	/**
+	 * @param int $marker
+	 * @param int $infoWindow
+	 * @return void
+	 * 2010-12-18 ms
+	 */
 	public function addEvent($marker, $infoWindow) {
 		$this->map .= "
 			google.maps.event.addListener(gMarkers[{$marker}], 'click', function(){
@@ -313,6 +354,12 @@ class GoogleMapV3Helper extends AppHelper {
 		";
 	}
 
+	/**
+	 * @param int $marker
+	 * @param string $event (js)
+	 * @return void
+	 * 2010-12-18 ms
+	 */
 	public function addCustomEvent($marker, $event) {
 		$this->map .= "
 			google.maps.event.addListener(gMarkers".self::$MAP_COUNT."[{$marker}], 'click', function(){
@@ -321,10 +368,21 @@ class GoogleMapV3Helper extends AppHelper {
 		";
 	}
 
+	/**
+	 * @param string $custom (js)
+	 * @return void
+	 * 2010-12-18 ms
+	 */
 	function addCustom($js) {
 		$this->map .= $js;
 	}
-
+	
+	/**
+	 * @param string $content (html/text)
+	 * @param int $infoWindowCount
+	 * @return void
+	 * 2010-12-18 ms
+	 */
 	public function setContentInfoWindow($con, $index) {
 		$this->map .= "
 			gInfoWindows".self::$MAP_COUNT."[$index].setContent('".$this->Javascript->escapeString($con)."');";
@@ -333,11 +391,11 @@ class GoogleMapV3Helper extends AppHelper {
 
 
 
-
 	/**
-	 * This method outputs string javascript to the html
-	 *
+	 * This method returns the javascript for the current map container
+	 * Just echo it below the map container
 	 * @return string
+	 * 2010-12-18 ms
 	*/
 	public function script() {
 		$script='<script type="text/javascript">
@@ -351,7 +409,7 @@ class GoogleMapV3Helper extends AppHelper {
 		}
 
 		if($this->_defaultSettings['autoCenterMarkers']) {
-			$script .= $this->autoCenter();
+			$script .= $this->_autoCenter();
 		}
 
 		$script .= '
@@ -364,9 +422,10 @@ class GoogleMapV3Helper extends AppHelper {
 	/**
 	 * auto center map
 	 * careful: with only one marker this can result in too high zoom values!
+	 * @return string $autoCenterCommands
 	 * 2010-12-17 ms
 	 */
-	public function autoCenter() {
+	protected function _autoCenter() {
 		return '
 		var bounds = new google.maps.LatLngBounds();
 		$.each(gMarkers'.self::$MAP_COUNT.',function (index, marker){ bounds.extend(marker.position);});
@@ -430,13 +489,178 @@ class GoogleMapV3Helper extends AppHelper {
 		return '{'.implode(', ', $res).'}';
 	}
 
+/** Google Maps Link **/
 
+	/**
+	 * returns a maps.google link
+	 * @param array options:
+	 * - from: neccessary (address or lat,lng)
+	 * - to: 1x neccessary (address or lat,lng - can be an array of multiple destinations: array('dest1', 'dest2'))
+	 * - zoom: optional (defaults to none)
+	 * @return string link: http://...
+	 * 2010-12-18 ms
+	 */
+	function link($options = array()) {
+		$link = 'http://maps.google.com/maps?';
+
+		$linkArray = array();
+		if (!empty($options['from'])) {
+			$linkArray[] = 'saddr='.h($options['from']);
+		}
+
+		if (!empty($options['to']) && is_array($options['to'])) {
+			$to = array_shift($options['to']);
+			foreach ($options['to'] as $key => $value) {
+				$to .= '+to:'.$value;
+			}
+			$linkArray[] = 'daddr='.h($to);
+		} elseif (!empty($options['to'])) {
+			$linkArray[] = 'daddr='.h($options['to']);
+		}
+
+		if(!empty($options['zoom'])) {
+			$linkArray[] = 'z='.(int)$options['zoom'];
+		}
+		//$linkArray[] = 'f=d';
+		//$linkArray[] = 'hl=de';
+		//$linkArray[] = 'ie=UTF8';
+		return $link.implode('&', $linkArray);
+	}
+
+/** STATIC MAP **/
+
+# Beachten Sie, dass diese URL am Zeichen "\" umbrochen wird.
+# Sie können die URL jedoch auch aus dem nachfolgenden Bild kopieren.
+# Der Übersichtlichkeit halber ist der aktuell verwendete API-Schlüssel nicht enthalten.
+/** http://maps.google.com/staticmap?center=40.714728,-73.998672&zoom=14&size=512x512&maptype=mobile&markers=40.702147,-74.015794,blues%7C40.711614,-74.012318,greeng%7C40.718217,-73.998284,redc&key=MAPS_API_KEY&sensor=false **/
+
+
+	/**
+	 * Create a plain image map
+	 * @param options:
+	 * - size [NECCESSARY: VALxVAL, e.g. 500x400]
+	 * - center: x,y [NECCESSARY, if no markers are given; else tries to take defaults if available] or TRUE/FALSE
+	 * - int/string zoom [optional; if no markers are given, default value is used; if set to "auto" and ]*
+	 * - markers [optional, separated by | (pipe)]
+	 * - maptype [optional: roadmap/mobile; default:roadmap]
+	 * @param array $attributes: html attributes for the image
+	 * - title
+	 * - alt (defaults to 'Map')
+	 * - url (tip: you can pass $this->link(...) and it will create a link to maps.google.com)
+	 * @return string $imageTag
+	 * 2010-12-18 ms
+	 */
+	function staticMap($options = array(), $attributes = array()) {
+		$defaultAttributes = array('alt' => __('Map', true));
+
+		return $this->Html->image($this->staticMapLink($options), array_merge($defaultAttributes, $attributes));
+	}
+
+	/**
+	 * Create a link to a plain image map
+	 * @param options
+	 * - see staticMap() for details
+	 * @return string $urlOfImage: http://...
+	 * 2010-12-18 ms
+	 */
+	function staticMapLink($options = array()) {
+		$map = 'http://maps.google.com/staticmap?';
+		$params = array();
+		$params['sensor'] = 'false';
+		$params['key'] = $this->key;
+		if (!empty($options['sensor'])) {
+			$params['sensor'] = 'true';
+		}
+		
+		$defaults = $this->_defaultSettings['map'];
+
+		if (!isset($options['center']) || $options['center'] === false) {
+			# dont use it
+		} elseif ($options['center'] === true && $defaults['lat'] !== null && $defaults['lng'] !== null) {
+			$params['center'] = (string)$defaults['lat'].','.(string)$defaults['lng'];
+		} elseif (!empty($options['center'])) {
+			$params['center'] = $options['center'];
+		} else {
+			# try to read from markers array???
+			if (isset($options['markers']) && count($options['markers']) == 1) {
+				//pr ($options['markers']);
+			}
+		}
+
+		if (!empty($options['zoom'])) {
+			if ($options['zoom'] == 'auto') {
+				if (!empty($options['markers']) && substr_count($options['zoom'],'|') > 0) {
+					# let google find the best zoom value itself
+				} else {
+					# do something here?
+				}
+			} else {
+				$params['zoom'] = $options['zoom'];
+			}
+		} else {
+			$params['zoom'] = $defaults['zoom'];
+		}
+
+		if (!empty($options['maptype'])) {
+			$params['maptype'] = $options['maptype'];
+		}
+
+		# {latitude},{longitude},{color}{alpha-character}
+		if (!empty($options['markers'])) {
+			$params['markers'] = $options['markers'];
+		}
+
+		# valXval
+		if (!empty($options['size'])) {
+			$params['size'] = $options['size'];
+		}
+
+		foreach ($params as $key => $value) {
+			$map .= $key.'='.$value.'&';
+		}
+		return $map;
+	}
+
+
+	/**
+	 * prepare markers for staticMap
+	 * @param array $positions
+	 * - lat: xx.xxxxxx (NECCESSARY)
+	 * - lng: xx.xxxxxx (NECCESSARY)
+	 * - color: red/blue/green (optional, default blue)
+	 * - char: a-z (optional, default s)
+	 * @return string $markers: z.b: 40.702147,-74.015794,blues|40.711614,-74.012318,greeng{|...}
+	 * 2010-12-18 ms
+	 */
+	function staticMarkers($pos = array()) {
+		//$markers = 'markers=';
+		foreach ($pos as $p) {
+			$lat = (is_numeric($p['lat'])?$p['lat']:null);
+			$lng = (is_numeric($p['lng'])?$p['lng']:null);
+			$color = (!empty($p['color'])?$p['color']:'blue');
+			$char = (!empty($p['char'])?$p['char']:'');
+
+			if ($lat == null || $lng == null) { continue; }
+			$params[] = $lat.','.$lng.','.$color.''.$char;
+		}
+
+		$markers = implode('|', $params);
+
+		return $markers;
+	}
+
+
+
+
+/** TODOS/EXP **/
 
 /*
 TODOS:
 
 - animations
 marker.setAnimation(google.maps.Animation.BOUNCE);
+
+- geocoding (+ reverse)
 
 - directions
 
@@ -450,7 +674,13 @@ marker.setAnimation(google.maps.Animation.BOUNCE);
 
 */
 
-/** TODOS/EXP **/
+
+	function geocoder() {
+		$js = 'var geocoder = new google.maps.Geocoder();';
+		//TODO
+		
+	}
+
 
 	/**
 	 * clustering for lots of markers!

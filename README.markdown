@@ -58,6 +58,8 @@ Firstly create a div for google map. Give it a css height and width:
 	1. Adding single/multiple markers
 	2. Adding single/multiple infowindow
 	3. Adding events on marker to show infowindow
+	4. Map Links
+	5. StaticMaps
 	
 ### 1. Adding single/multiple markers
 
@@ -76,7 +78,7 @@ Firstly create a div for google map. Give it a css height and width:
 		$this->GoogleMapV3->addMarker($options);
 	?>		 
 
-### 2. Adding single/multiple infowindow
+### 2. (OPTIONAL) Adding single/multiple infowindow
 
 	<?php 
 		$options = array(
@@ -88,7 +90,7 @@ Firstly create a div for google map. Give it a css height and width:
 		$this->GoogleMapV3->addInfoWindow($options);
 	?>
 
-### 3. Adding events on marker to show infowindow
+### 3. (OPTIONAL) Adding events on marker to show infowindow
 
 	<?php 
 		$marker = $this->GoogleMapV3->addMarker($options);
@@ -105,6 +107,33 @@ or
 finally, now time to make the script
 
 	<?php echo $this->GoogleMapV3->script() ?>
+
+
+### 4. Map Links
+
+	<?php 
+		$url = $this->GoogleMap->link(array('to'=>'Munich, Germany'));
+		echo $this->Html->link('Visit Me', $url, array('target'=>'_blank'));
+	?>
+	
+	
+### 5. StaticMaps
+
+	<?php 
+		# a simple image as map
+		$options = array(
+			'size' => '500x400',
+			'center' => true
+		);
+		$attr = array(
+			'title'=>'Yeah'
+		);
+		echo $this->GoogleMap->staticMap($options, $attr);
+		
+		# you can even add an url to click on
+		$attr['url'] = $this->GoogleMap->link(array('to'=>'Munich, Germany'));
+		echo $this->GoogleMap->staticMap($options, $attr);
+	?>
 	
 	
 Test Files

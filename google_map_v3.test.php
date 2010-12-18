@@ -19,7 +19,40 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 	}
 		
 	function testStatic() {
+		$options = array(
+			'size' => '200x100',
+			'center' => true
+		);
+		$is = $this->GoogleMap->staticMapLink($options);
+		echo h($is);
+		echo BR.BR;
+		$attr = array(
+			'title'=>'Yeah'
+		);
+		$is = $this->GoogleMap->staticMap($options, $attr);
+		echo h($is).BR;
+		echo $is;
+		echo BR.BR;
 		
+		$url = $this->GoogleMap->link(array('to'=>'Munich, Germany'));
+		echo h($url);
+		echo BR.BR;
+		
+		$attr = array('url'=>$this->GoogleMap->link(array('to'=>'Munich, Germany')));
+		$is = $this->GoogleMap->staticMap($options, $attr);
+		echo h($is).BR;
+		echo $is;
+		
+		echo BR.BR;
+		
+		$url = $this->GoogleMap->link(array('to'=>'Munich, Germany'));
+		$attr = array(
+			'title'=>'Yeah'
+		);
+		$image = $this->GoogleMap->staticMap($options, $attr);
+		$link = $this->GoogleMap->Html->link($image, $url, array('escape'=>false, 'target'=>'_blank'));
+		echo h($link).BR;
+		echo $link;
 	}
 	
 	
