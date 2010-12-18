@@ -9,7 +9,8 @@
  * @version 0.10.12
  *
  * fixed brackets, spacesToTabs, indends, some improvements, supports multiple maps now.
- * 2010-12-17 ms
+ * now capable of resetting itself (full or partly) for multiple maps on a single view
+ * 2010-12-18 ms
  */
 class GoogleMapV3Helper extends AppHelper {
 
@@ -24,9 +25,7 @@ class GoogleMapV3Helper extends AppHelper {
 	private $api = null;
 
 	public function __construct() {
-		self::$MARKER_COUNT 		= 0;
-		self::$INFO_WINDOW_COUNT 	= 0;
-
+		# read constum config settings
 		$google = (array)Configure::read('Google');
 		if (!empty($google['key'])) {
 			$this->key = $google['key'];
@@ -35,13 +34,13 @@ class GoogleMapV3Helper extends AppHelper {
 			$this->api = $google['api'];
 		}
 		if (!empty($google['zoom'])) {
-			$this->_defaultSettings['map']['zoom'] = $google['zoom'];
+			$this->_defaultOptions['map']['zoom'] = $google['zoom'];
 		}
 		if (!empty($google['lat'])) {
-			$this->_defaultSettings['map']['lat'] = $google['lat'];
+			$this->_defaultOptions['map']['lat'] = $google['lat'];
 		}
 		if (!empty($google['lng'])) {
-			$this->_defaultSettings['map']['lng'] = $google['lng'];
+			$this->_defaultOptions['map']['lng'] = $google['lng'];
 		}
 	}
 
@@ -64,7 +63,7 @@ class GoogleMapV3Helper extends AppHelper {
 	 *
 	 * @var array
 	 */
-	public $infoWindow = array();
+	public $infoWindows = array();
 
 	/**
 	 * google map instance varible
@@ -73,6 +72,7 @@ class GoogleMapV3Helper extends AppHelper {
 	 */
 	public $map = '';
 
+	private $mapIds = array(); # remember already used ones (valid xhtml contains ids not more than once)
 
 
 	/**
@@ -80,7 +80,7 @@ class GoogleMapV3Helper extends AppHelper {
 	 *
 	 * @var array
 	 */
-	private $_defaultSettings = array(
+	private $_defaultOptions = array(
 		'map'=>array(
 			'streetViewControl' => false,
 			'navigationControl' => true,
@@ -131,7 +131,7 @@ class GoogleMapV3Helper extends AppHelper {
 	);
 
 
-	private $_currentSettings =array();
+	private $_currentOptions =array();
 
 
 /** Google Maps JS **/
@@ -176,6 +176,13 @@ class GoogleMapV3Helper extends AppHelper {
 		return 'map'.self::$MAP_COUNT;
 	}
 
+	public function reset($full = true) {
+		self::$MAP_COUNT = self::$MARKER_COUNT = self::$INFO_WINDOW_COUNT = 0;
+		$this->markers = $this->infoWindows = array();
+		if ($full) {
+			$this->_currentOptions = $this->_defaultOptions;
+		}	
+	}
 
 	/**
 	 * This the initialization point of the script
@@ -187,7 +194,8 @@ class GoogleMapV3Helper extends AppHelper {
 	 * 2010-12-18 ms
 	 */
 	function map($options = array()) {
-		$options = $this->_currentSettings = Set::merge($this->_defaultSettings, $options);
+		$this->reset();
+		$options = $this->_currentOptions = Set::merge($this->_defaultOptions, $options);
 
 		if (!empty($options['autoScript'])) {
 			$this->Html->script($this->apiUrl(), array('inline'=>false));
@@ -203,11 +211,16 @@ class GoogleMapV3Helper extends AppHelper {
 			var initialLocation;
 			var browserSupportFlag =  new Boolean();
 			var myOptions = ".$this->_mapOptions().";
-			";
+		";
 
+		#rename "map_canvas" to "map_canvas1", ... if multiple maps on one page
+		if (in_array($options['div']['id'], $this->mapIds)) {
+			$options['div']['id'] .= '-1'; //TODO: improve
+		}
+		$this->mapIds[] = $options['div']['id'];
 
 		$map .= "
-			".$this->name()." = new google.maps.Map(document.getElementById(\"".$options['div']['id']."\"), myOptions);
+			var ".$this->name()." = new google.maps.Map(document.getElementById(\"".$options['div']['id']."\"), myOptions);
 			";
 		$this->map = $map;
 
@@ -258,7 +271,7 @@ class GoogleMapV3Helper extends AppHelper {
 			return false;
 		}
 
-		$options = array_merge($this->_currentSettings['marker'], $options);
+		$options = array_merge($this->_currentOptions['marker'], $options);
 
 		$marker = "
 			var x".self::$MARKER_COUNT." = new google.maps.Marker({
@@ -273,7 +286,7 @@ class GoogleMapV3Helper extends AppHelper {
 		";
 		$this->map.= $marker;
 
-		if (!empty($options['content']) && $this->_currentSettings['infoWindow']['useMultiple']) {
+		if (!empty($options['content']) && $this->_currentOptions['infoWindow']['useMultiple']) {
 			$x = $this->addInfoWindow();
 			$this->setContentInfoWindow($options['content'], $x);
 			/*
@@ -295,12 +308,12 @@ class GoogleMapV3Helper extends AppHelper {
 			$this->addEvent($x);
 
 		} elseif (!empty($options['content'])) {
-			if (!isset($this->_currentSettings['marker']['infoWindow'])) {
-				$this->_currentSettings['marker']['infoWindow'] = $this->addInfoWindow();
+			if (!isset($this->_currentOptions['marker']['infoWindow'])) {
+				$this->_currentOptions['marker']['infoWindow'] = $this->addInfoWindow();
 			}
 			$event = "
-			gInfoWindows".self::$MAP_COUNT."[".$this->_currentSettings['marker']['infoWindow']."].setContent('".$this->Javascript->escapeScript($options['content'])."');
-			gInfoWindows".self::$MAP_COUNT."[".$this->_currentSettings['marker']['infoWindow']."].open(".$this->name().", gMarkers".self::$MAP_COUNT."[".self::$MARKER_COUNT."]);
+			gInfoWindows".self::$MAP_COUNT."[".$this->_currentOptions['marker']['infoWindow']."].setContent('".$this->Javascript->escapeScript($options['content'])."');
+			gInfoWindows".self::$MAP_COUNT."[".$this->_currentOptions['marker']['infoWindow']."].open(".$this->name().", gMarkers".self::$MAP_COUNT."[".self::$MARKER_COUNT."]);
 			";
 			$this->addCustomEvent(self::$MARKER_COUNT, $event);
 		}
@@ -317,7 +330,7 @@ class GoogleMapV3Helper extends AppHelper {
 	 * 2010-12-18 ms
 	 */
 	public function addInfoWindow($options=array()) {
-		$options = $this->_currentSettings['infoWindow'];
+		$options = $this->_currentOptions['infoWindow'];
 		$options = array_merge($options,$options);
 
 
@@ -404,11 +417,11 @@ class GoogleMapV3Helper extends AppHelper {
 
 		$script .= $this->map;
 
-		if($this->_defaultSettings['showMarker'] && !empty($this->markers) && is_array($this->markers)){
+		if($this->_defaultOptions['showMarker'] && !empty($this->markers) && is_array($this->markers)){
 			$script .= implode($this->markers, " ");
 		}
 
-		if($this->_defaultSettings['autoCenterMarkers']) {
+		if($this->_defaultOptions['autoCenterMarkers']) {
 			$script .= $this->_autoCenter();
 		}
 
@@ -438,7 +451,7 @@ class GoogleMapV3Helper extends AppHelper {
 	 * 2010-12-17 ms
 	 */
 	private function _mapOptions(){
-		$options = $this->_currentSettings['map'];
+		$options = $this->_currentOptions['map'];
 
 		$mapOptions = array_intersect_key($options, array('streetViewControl' => null, 'navigationControl' => null,
 			'mapTypeControl' => null,
@@ -572,7 +585,7 @@ class GoogleMapV3Helper extends AppHelper {
 			$params['sensor'] = 'true';
 		}
 		
-		$defaults = $this->_defaultSettings['map'];
+		$defaults = $this->_defaultOptions['map'];
 
 		if (!isset($options['center']) || $options['center'] === false) {
 			# dont use it

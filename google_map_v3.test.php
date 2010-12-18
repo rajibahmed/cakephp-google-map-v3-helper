@@ -5,7 +5,7 @@ App::import('Vendor', 'MyCakeTestCase');
 
 class GoogleMapHelperTest extends MyCakeTestCase {
 	
-	function setUp() {
+	function startCase() {
 		$this->GoogleMap = new GoogleMapV3Helper();
 		$this->GoogleMap->initHelpers();
 	}
