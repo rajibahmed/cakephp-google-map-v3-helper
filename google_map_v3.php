@@ -7,6 +7,11 @@
  * @package default
  * @author Rajib Ahmed
  * @version 0.10.12
+ * 
+ * CakePHP1.3
+ *
+ * CodeAPI: 		http://code.google.com/intl/de-DE/apis/maps/documentation/javascript/basics.html
+ * Icons/Images: 	http://gmapicons.googlepages.com/home
  *
  * fixed brackets, spacesToTabs, indends, some improvements, supports multiple maps now.
  * now capable of resetting itself (full or partly) for multiple maps on a single view
@@ -126,6 +131,11 @@ class GoogleMapV3Helper extends AppHelper {
 		'event'=>array(
 		),
 		'animation' => array(
+		),
+		'plugins' => array(
+			'keydragzoom' => false, # http://google-maps-utility-library-v3.googlecode.com/svn/tags/keydragzoom/
+			'markermanager' => false, # http://google-maps-utility-library-v3.googlecode.com/svn/tags/markermanager/
+			'markercluster' => false, # http://google-maps-utility-library-v3.googlecode.com/svn/tags/markerclusterer/
 		),
 		'autoCenterMarkers'=>false
 	);
@@ -642,7 +652,7 @@ class GoogleMapV3Helper extends AppHelper {
 	 * - lng: xx.xxxxxx (NECCESSARY)
 	 * - color: red/blue/green (optional, default blue)
 	 * - char: a-z (optional, default s)
-	 * @return string $markers: z.b: 40.702147,-74.015794,blues|40.711614,-74.012318,greeng{|...}
+	 * @return string $markers: e.g: 40.702147,-74.015794,blues|40.711614,-74.012318,greeng{|...}
 	 * 2010-12-18 ms
 	 */
 	function staticMarkers($pos = array()) {
@@ -681,7 +691,12 @@ marker.setAnimation(google.maps.Animation.BOUNCE);
 
 - overlays
 
-- fluster (for marker manager and clustering?)
+- fluster (for clustering?)
+or
+- markerManager (many markers)
+
+- infoBox
+http://google-maps-utility-library-v3.googlecode.com/svn/tags/infobox/
 
 - ...
 
@@ -693,14 +708,33 @@ marker.setAnimation(google.maps.Animation.BOUNCE);
 		//TODO
 		
 	}
+	
+	/**
+	 * managing lots of markers!
+	 * @link http://google-maps-utility-library-v3.googlecode.com/svn/tags/markermanager/1.0/docs/examples.html
+	 * @param options
+	 * -
+	 * @return void
+	 * 2010-12-18 ms
+	 */
+	function setManager() {
+		$js .= '
+		var mgr'.self::$MAP_COUNT.' = new MarkerManager('.$this->name().');
+		';
+	}
 
+	public function addManagerMarker($marker, $options) {
+		$js = 'mgr'.self::$MAP_COUNT.'.addMarker('.$marker.');';
+	}
+	
 
 	/**
 	 * clustering for lots of markers!
+	 * @link ?
 	 * @param options
 	 * -
 	 * based on Fluster2 0.1.1
-	 * @link
+	 * @return void
 	 */
 	public function setCluster($options) {
 		$js = self::$flusterScript;
