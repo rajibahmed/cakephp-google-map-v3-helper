@@ -33,10 +33,10 @@ class GoogleMapV3Helper extends AppHelper {
 		# read constum config settings
 		$google = (array)Configure::read('Google');
 		if (!empty($google['key'])) {
-			$this->key = $google['key'];
+			$this->key = $google['key']; # needed in v3?
 		}
 		if (!empty($google['api'])) {
-			$this->api = $google['api'];
+			$this->api = $google['api']; # needed in v3?
 		}
 		if (!empty($google['zoom'])) {
 			$this->_defaultOptions['map']['zoom'] = $google['zoom'];
@@ -46,6 +46,16 @@ class GoogleMapV3Helper extends AppHelper {
 		}
 		if (!empty($google['lng'])) {
 			$this->_defaultOptions['map']['lng'] = $google['lng'];
+		}
+		if (!empty($google['type'])) {
+			$this->_defaultOptions['map']['type'] = $google['type'];
+		}
+		if (!empty($google['size'])) {
+			$this->_defaultOptions['div']['width'] = $google['size']['width'];
+			$this->_defaultOptions['div']['height'] = $google['size']['height'];
+		}
+		if (!empty($google['staticSize'])) {
+			$this->_defaultOptions['staticMap']['size'] = $google['staticSize'];
 		}
 	}
 
@@ -103,6 +113,7 @@ class GoogleMapV3Helper extends AppHelper {
 			'scaleControl' => true
 		),
 		'staticMap' => array(
+			'size' => '300x300',
 			//'zoom' => 12
 			//'lat' => 51,
 			//'lng' => 11,
@@ -126,7 +137,10 @@ class GoogleMapV3Helper extends AppHelper {
 			'title' => ''
 		),
 		'div'=>array(
-			'id'=>'map_canvas'
+			'id'=>'map_canvas',
+			'width' => '100%',
+			'height' => '400px',
+			'class' => 'map'
 		),
 		'event'=>array(
 		),
@@ -179,13 +193,28 @@ class GoogleMapV3Helper extends AppHelper {
 	
 	
 	/**
-	 * @return string $currentContainerObject
+	 * @return string $currentMapObject
 	 * 2010-12-18 ms
 	 */
 	public function name() {
 		return 'map'.self::$MAP_COUNT;
 	}
-
+	
+	/**
+	 * @return string $currentContainerId
+	 * 2010-12-18 ms
+	 */
+	public function id() {
+		return $this->_currentOptions['div']['id'];
+	}
+	
+	/**
+	 * make it possible to include multiple maps per page
+	 * resets markers, infoWindows etc
+	 * @param full: true=optionsAsWell
+	 * @return void
+	 * 2010-12-18 ms
+	 */
 	public function reset($full = true) {
 		self::$MAP_COUNT = self::$MARKER_COUNT = self::$INFO_WINDOW_COUNT = 0;
 		$this->markers = $this->infoWindows = array();
@@ -200,8 +229,7 @@ class GoogleMapV3Helper extends AppHelper {
 	 *
 	 * @param array $options associative array of settings are passed
 	 * @return string $divContainer
-	 * @author Rajib Ahmed
-	 * 2010-12-18 ms
+	 * 2010-12-20 ms
 	 */
 	function map($options = array()) {
 		$this->reset();
@@ -226,6 +254,7 @@ class GoogleMapV3Helper extends AppHelper {
 		#rename "map_canvas" to "map_canvas1", ... if multiple maps on one page
 		if (in_array($options['div']['id'], $this->mapIds)) {
 			$options['div']['id'] .= '-1'; //TODO: improve
+			$this->_currentOptions = $options['div']['id'];
 		}
 		$this->mapIds[] = $options['div']['id'];
 
@@ -235,31 +264,20 @@ class GoogleMapV3Helper extends AppHelper {
 		$this->map = $map;
 
 		$result = '';
-		if (!isset($options['div']) || $options['div'] !== false) {
-			$options['div']['style'] = '';
-			if (empty($options['div']['width'])) {
-				$options['div']['width'] = '100%';
-			}
-			if (empty($options['div']['height'])) {
-				$options['div']['height'] = '400px';
-			}
-			if (empty($options['div']['class'])) {
-				$options['div']['class'] = 'map';
-			}
-			if (is_int($options['div']['width'])) {
-				$options['div']['width'] .= 'px';
-			}
-			if (is_int($options['div']['height'])) {
-				$options['div']['height'] .= 'px';
-			}
-			
-			$options['div']['style'] .= 'width: '.$options['div']['width'].';';
-			$options['div']['style'] .= 'height: '.$options['div']['height'].';';
-			unset($options['div']['width']); unset($options['div']['height']);
-
-			$defaultText = isset($options['content']) ? h($options['content']) : __('Map cannot be displayed!', true); 
-			$result = $this->Html->tag('div', $defaultText, $options['div']);
+		$options['div']['style'] = '';
+		if (is_int($options['div']['width'])) {
+			$options['div']['width'] .= 'px';
 		}
+		if (is_int($options['div']['height'])) {
+			$options['div']['height'] .= 'px';
+		}
+		
+		$options['div']['style'] .= 'width: '.$options['div']['width'].';';
+		$options['div']['style'] .= 'height: '.$options['div']['height'].';';
+		unset($options['div']['width']); unset($options['div']['height']);
+
+		$defaultText = isset($options['content']) ? h($options['content']) : __('Map cannot be displayed!', true); 
+		$result = $this->Html->tag('div', $defaultText, $options['div']);
 
 		return $result;
 	}
@@ -596,6 +614,8 @@ class GoogleMapV3Helper extends AppHelper {
 		}
 		
 		$defaults = $this->_defaultOptions['map'];
+		$defaults = array_merge($defaults, $this->_defaultOptions['staticMap'], $options);
+		$options = array_merge($defaults, $options);
 
 		if (!isset($options['center']) || $options['center'] === false) {
 			# dont use it

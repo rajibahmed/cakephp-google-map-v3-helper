@@ -38,6 +38,7 @@ class GoogleMapHelperTest extends MyCakeTestCase {
 		echo h($url);
 		echo BR.BR;
 		
+		unset($options['size']);
 		$attr = array('url'=>$this->GoogleMap->link(array('to'=>'Munich, Germany')));
 		$is = $this->GoogleMap->staticMap($options, $attr);
 		echo h($is).BR;
